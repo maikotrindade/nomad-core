@@ -121,3 +121,5 @@ dist
 .DS_Store
 .env
 npm-debug.log
+
+functions/serviceAccount.json
