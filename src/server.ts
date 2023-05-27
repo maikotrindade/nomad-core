@@ -2,11 +2,11 @@
 /* eslint-disable import/first */
 require('dotenv').config();
 
-import cors from 'cors';
-import helmet from 'helmet';
-import express, { Request, Response } from 'express';
-import bodyParser from 'body-parser';
-import mongoose from 'mongoose';
+const cors = require('cors');
+const helmet = require('helmet');
+const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 const compression = require('compression');
 
 const app = express();
@@ -16,14 +16,19 @@ app.use(compression());
 app.use(bodyParser.json());
 
 // Connect to MongoDB Atlas
-const urlConnection = process.env.MONGO_CONNECTION_URL;
-mongoose.connect(urlConnection!!)
-  .then(() => {
-    console.log('Connected to MongoDB Atlas');
-  })
-  .catch((error: any) => {
+const mongoDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_CONNECTION_URL!!)
+    .then(() => {
+      console.log('Connected to MongoDB Atlas');
+    })
+    .catch((error: any) => {
+      console.error('Error connecting to MongoDB Atlas:', error);
+    });
+  } catch (error) {
     console.error('Error connecting to MongoDB Atlas:', error);
-  });
+  }
+}
 
 // Define a schema for the User model
 const userSchema = new mongoose.Schema({
@@ -71,12 +76,14 @@ app.get('/users/:id', async (req, res) => {
 });
 
 app.route('/')
-  .get(function (req, res) {
-    res.sendFile(process.cwd() + '/index.html');
-});
+.get(function (req, res) {
+  res.sendFile(process.cwd() + '/index.html');
+}); 
 
 // Server Activation
 const port = process.env.PORT;
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
+
+module.exports = mongoDB()

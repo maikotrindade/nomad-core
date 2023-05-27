@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
-    "strict": true,
     "esModuleInterop": true,                                                       
     "skipLibCheck": true,
     "baseUrl": "src",
     "outDir": "dist",    
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "noImplicitAny": false
   },
-  "include": ["src"]
+  "exclude": [
+    "node_modules"
+  ]
 }
 
 /*
