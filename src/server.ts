@@ -7,11 +7,12 @@ import helmet from 'helmet';
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
-
+const compression = require('compression');
 
 const app = express();
 app.use(helmet());
 app.use(cors());
+app.use(compression()); 
 app.use(bodyParser.json());
 
 // Connect to MongoDB Atlas
@@ -69,9 +70,10 @@ app.get('/users/:id', async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Hello!!')
-})
+app.route('/')
+  .get(function (req, res) {
+    res.sendFile(process.cwd() + '/index.html');
+});
 
 // Server Activation
 const port = process.env.PORT;
