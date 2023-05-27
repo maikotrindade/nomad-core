@@ -43,7 +43,7 @@ app.post('/users', async (req, res) => {
     await user.save();
     res.status(201).json(user);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create user' });
+    res.status(500).json({ error: 'Failed to create user: ' + error });
   }
 });
 
@@ -53,7 +53,7 @@ app.get('/users', async (req, res) => {
     const users = await User.find();
     res.json(users);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users' });
+    res.status(500).json({ error: 'Failed to fetch users' + error});
   }
 });
 
@@ -66,7 +66,7 @@ app.get('/users/:id', async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch user' });
+    res.status(500).json({ error: 'Failed to fetch user' + error});
   }
 });
 
