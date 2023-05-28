@@ -1,7 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { User } = require('./../models/user');
+const { User } = require('./../models/User');
 const express = require('express');
+
 const router = express.Router();
 
 const mongoDB = async () => {
@@ -20,15 +21,15 @@ const mongoDB = async () => {
 
 router.post('/user', async (req, res) => {
     try {
-        const { name, email, address } = req.body;
-        // let user = await User.findOne({ email });
-        // if (user) {
-        //     user.name = name;
-        //     await user.save();
-        // } else {
-            let user = new User({ email, name, address});
+        const { name, email, address, balance } = req.body;
+        let user = await User.findOne({ email });
+        if (user) {
+            user.name = name;
             await user.save();
-        // }
+        } else {
+            user = new User({ name: name, email: email, address: address, balance: balance});
+            await user.save();
+        }
         res.status(201).json(user);
     } catch (error) {
         res.status(500).json({ error: 'Failed to upsert user: ' + error });
