@@ -34,26 +34,32 @@ const mongoDB = async () => {
 const userSchema = new mongoose.Schema({
   name: String,
   email: String,
-  token: String,
+  address: String,
 });
 
 // Define the User model
 const User = mongoose.model('User', userSchema);
 
 // Create a new user
-app.post('/users', async (req, res) => {
+app.post('/user', async (req, res) => {
   try {
-    const { name, email, token } = req.body;
-    const user = new User({ name, email, token });
-    await user.save();
+    const { name, email, address } = req.body;
+    let user = await User.findOne({ email });
+    if (user) {
+      user.name = name;
+      await user.save();
+    } else {
+      user = new User({ email, name: address});
+      await user.save();
+    }
     res.status(201).json(user);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create user: ' + error });
+    res.status(500).json({ error: 'Failed to upsert user: ' + error });
   }
 });
 
 // Get all users
-app.get('/users', async (req, res) => {
+app.get('/user', async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
@@ -63,9 +69,9 @@ app.get('/users', async (req, res) => {
 });
 
 // Get a user by ID
-app.get('/users/:id', async (req, res) => {
+app.get('/user/:email', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findByEmail(req.params.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
