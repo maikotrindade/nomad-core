@@ -7,7 +7,7 @@
     "baseUrl": "src",
     "outDir": "dist",    
     "moduleResolution": "node",
-    "noImplicitAny": false
+    "noImplicitAny": false,
   },
   "exclude": [
     "node_modules"
