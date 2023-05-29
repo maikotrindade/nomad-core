@@ -2,8 +2,8 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const { User } = require('./../models/User');
 const express = require('express');
-
 const router = express.Router();
+const { ethers } = require('ethers');
 
 const mongoDB = async () => {
     try {
@@ -21,13 +21,20 @@ const mongoDB = async () => {
 
 router.post('/user', async (req, res) => {
     try {
-        const { name, email, address, balance } = req.body;
+        const { name, email, balance } = req.body;
         let user = await User.findOne({ email });
         if (user) {
             user.name = name;
             await user.save();
         } else {
-            user = new User({ name: name, email: email, address: address, balance: balance});
+            const wallet = await ethers.Wallet.createRandom();
+            user = new User({ 
+                name: name, 
+                email: email, 
+                address: wallet.address, 
+                privateKey: wallet.privateKey,
+                balance: balance
+            });
             await user.save();
         }
         res.status(201).json(user);
@@ -59,3 +66,4 @@ router.get('/user/:email', async (req, res) => {
 });
 
 module.exports = router, mongoDB() 
+export {};
