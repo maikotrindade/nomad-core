@@ -55,7 +55,7 @@ router.get('/user', async (req, res) => {
 
 router.get('/user/:email', async (req, res) => {
     try {
-        const user = await User.findByEmail(req.params.email);
+        const user = await User.findOne({ email: req.params.email }).exec();
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
