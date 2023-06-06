@@ -66,5 +66,9 @@ router.get('/user', async (req, res) => {
     }
 });
 
+router.get('/privacy', async (req, res) => {
+    res.redirect('/privacy.html');
+});
+
 module.exports = router, mongoDB() 
 export {};

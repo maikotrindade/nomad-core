@@ -1,10 +1,14 @@
 // #!/usr/bin/env ts-node
+
+import { Signer } from "ethers";
+
 // /* eslint-disable import/first */
 require('dotenv').config();
 
 const axios = require('axios');
 const { Network, Alchemy, Wallet, Utils} = require("alchemy-sdk");
 const { ethers } = require("ethers");
+const { User } = require('./../models/User');
 const express = require('express');
 const router = express.Router();
 
@@ -16,77 +20,62 @@ const settings = {
 };
 
 const alchemy = new Alchemy(settings);
-const signer = new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy);
+//const signer = new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy);
 
 router.post('/reward/flight', async (req, res) => {
+    const { flightId, email } = req.body
     try {
-        const { flightId, passsenger } = req.body
-        const contract = await connectRewardBadge()
-        await contract.addFlight(flightId, passsenger, { gasPrice: 100000000, gasLimit: 1000000})
-        
-        // TODO!! 
-        res.status(201)
+        const user = await User.findOne({ email: email }).exec();
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const contract = await connectRewardBadge(new Wallet(user.privateKey, alchemy));
+        const addFlightMethod = await contract.addFlight(flightId, user.address, { gasPrice: 100000000, gasLimit: 1000000})
+        console.log(addFlightMethod)
+        res.status(201).json({ message: 'Flight ticket added' });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to add flight to Reward Badge smart contract. Error: ' + error });
+        res.status(500).json({ error: 'Failed to add flight ticket: ' + error});
     }
 });
 
-const connectRewardBadge = async () => {
+router.get('/reward/points', async (req, res) => {
+    try {
+        const email = req.query.email as string;
+        const user = await User.findOne({ email: email }).exec();
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const contract = await connectRewardBadge(new Wallet(user.privateKey, alchemy));
+        const points = await contract.getPoints()
+        res.status(200).json({ points: points });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get rewards points: ' + error});
+    }
+});
+
+router.get('/reward/tokens', async (req, res) => {
+    try {
+        const email = req.query.email as string;
+        const user = await User.findOne({ email: email }).exec();
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const contract = await connectRewardBadge(new Wallet(user.privateKey, alchemy));
+        const points = await contract.getTokensRewards()
+        res.status(200).json({ points: points });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get rewards tokens: ' + error});
+    }
+});
+
+const connectRewardBadge = async (signer: Signer) => {
     const contractBadgeAddress = "https://raw.githubusercontent.com/maikotrindade/nomad-token/main/output/NomadBadgeAddress.json"
     const contractBagdeABI = "https://raw.githubusercontent.com/maikotrindade/nomad-token/main/output/NomadBadgeAbi.json"
     
     const addressResponse = await axios.get(contractBadgeAddress);
     const abiResponse = await axios.get(contractBagdeABI);
     return await new ethers.Contract(addressResponse.data.Contract, abiResponse.data.abi, signer);
-    
-    // const contractErc20Address = "https://raw.githubusercontent.com/maikotrindade/nomad-token/main/output/NomadRewardTokenAddress.json"
-    // const contractErc20Abi = "https://raw.githubusercontent.com/maikotrindade/nomad-token/main/output/NomadRewardTokenAbi.json"
-    // const erc20AddressResponse = await axios.get(contractErc20Address);
-    // const erc20AbiResponse = await axios.get(contractErc20Abi);
-    // const erc20Contract = new ethers.Contract(erc20AddressResponse.data.Contract, erc20AbiResponse.data.abi, signer);
 }
-
-// async function main() {
-//     try {
-//         const addressResponse = await axios.get(contractAddress);
-//         const abiResponse = await axios.get(contractABI);
-//         const contract = new ethers.Contract(addressResponse.data.Contract, abiResponse.data.abi, signer);
-
-//         const erc20AddressResponse = await axios.get(erc20Address);
-//         const erc20AbiResponse = await axios.get(erc20Abi);
-//         const erc20Contract = new ethers.Contract(erc20AddressResponse.data.Contract, erc20AbiResponse.data.abi, signer);
-
-//         // const runRewardProcess1 = await contract.runRewardProcess(TEST_ACCOUNT_2)
-//         // console.log(runRewardProcess1);
-
-//         // const runRewardProcess2 = await contract.runRewardProcess(TEST_ACCOUNT_3)
-//         // console.log(runRewardProcess2);
-
-//         // const runRewardProcess3 = await contract.runRewardProcess(TEST_ACCOUNT_3)
-//         // console.log(runRewardProcess3);
-
-//         // const totalPointsDistributed = await contract.getTotalPointsDistributed();
-//         // console.log("total points: " + totalPointsDistributed);
-
-//         // const totalBadgesMinted = await contract.getTotalBadgesMinted();
-//         // console.log("total badges: " + totalBadgesMinted);
-
-//         // const totalSupply = await erc20Contract.totalSupply();
-//         // console.log("totalSupply: " + totalSupply);
-
-//         // const balanceOfOwner = await erc20Contract.balanceOf(signer.address)
-//         // console.log("balanceOf owner: " + balanceOfOwner);
-
-//         // const success = await erc20Contract.transfer(TEST_ACCOUNT_1, 666)
-//         // console.log("Success ? " + success.toString());
-
-//     } catch (error) {
-//         console.error(error);
-//     }
-// }
-
-// main();
-
 
 module.exports = router 
 export {};
