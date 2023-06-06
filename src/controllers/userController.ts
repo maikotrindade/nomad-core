@@ -43,7 +43,7 @@ router.post('/user', async (req, res) => {
     }
 });
 
-router.get('/user', async (req, res) => {
+router.get('/users', async (req, res) => {
     try {
         const users = await User.find();
         res.json(users);
@@ -53,9 +53,10 @@ router.get('/user', async (req, res) => {
 });
 
 
-router.get('/user/:email', async (req, res) => {
+router.get('/user', async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.params.email }).exec();
+        const email = req.query.email as string;
+        const user = await User.findOne({ email: email }).exec();
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
