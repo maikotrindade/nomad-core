@@ -1,31 +1,28 @@
-// #!/usr/bin/env ts-node
-import { Signer } from "ethers";
-
 // /* eslint-disable import/first */
 require('dotenv').config();
 
 const axios = require('axios');
 const { Network, Alchemy, Wallet} = require("alchemy-sdk");
-const { ethers } = require("ethers");
-const { User } = require('./../models/User');
 const express = require('express');
+
+const { User } = require('./../models/User');
+import { flightStatusToInt } from './../models/flightStatus';
+import { connectRewardBadge } from './smartContractController';
 const router = express.Router();
 
 const { ALCHEMY_KEY, ADMIN_ACCOUNT_PRIVATE_KEY } = process.env;
-
 const settings = {
     apiKey: ALCHEMY_KEY,
     network: Network.ETH_SEPOLIA,
 };
-
 const alchemy = new Alchemy(settings);
 
 /**
-* GET Flights tokens
+* GET Flights from Aviation stack API
 */
 router.get('/flights', async (req, res) => {
     try {
-        const aviationUrl = "http://api.aviationstack.com/v1/flights?access_key=" + process.env.AVIATIONSTACK_ACCESS_KEY!! + "&dep_iata=YYC&arr_iata=SEA"
+        const aviationUrl = "http://api.aviationstack.com/v1/flights?access_key=" + process.env.AVIATIONSTACK_ACCESS_KEY!! + "&dep_iata=YYC&arr_iata=SEA&flight_status=scheduled"
         const aviationResponse = await axios.get(aviationUrl, {timeout: 30000})
         res.status(201).json(aviationResponse.data.data);
     } catch (error) {
@@ -59,8 +56,7 @@ router.post('/reward/flightstatus', async (req, res) => {
     const { flightId, flightStatus } = req.body
     try {
         const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
-        const updateFlightStatusMethod = await contract.updateFlightStatus(flightId, flightStatus, { gasPrice: 100000000, gasLimit: 1000000})
-        console.log(updateFlightStatusMethod)
+        await contract.updateFlightStatus(flightId, flightStatus, { gasPrice: 100000000, gasLimit: 1000000})
         res.status(201).json({ message: 'Flight status updated'});
     } catch (error) {
         res.status(500).json({ error: 'Failed to update flight status: ' + error});
@@ -117,14 +113,34 @@ router.get('/reward/tokens', async (req, res) => {
     }
 });
 
-const connectRewardBadge = async (signer: Signer) => {
-    const contractBadgeAddress = "https://raw.githubusercontent.com/maikotrindade/nomad-token/main/output/NomadBadgeAddress.json"
-    const contractBagdeABI = "https://raw.githubusercontent.com/maikotrindade/nomad-token/main/output/NomadBadgeAbi.json"
-    
-    const addressResponse = await axios.get(contractBadgeAddress);
-    const abiResponse = await axios.get(contractBagdeABI);
-    return await new ethers.Contract(addressResponse.data.Contract, abiResponse.data.abi, signer);
-}
+/**
+* GET Scheduled flights from smart contract
+*/
+router.get('/admin/flights', async (req, res) => {
+    try {
+        const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
+        const scheduledFlightsIds = await contract.getScheduledFlights()
+        console.log(scheduledFlightsIds)
+        
+        for (const flightId of scheduledFlightsIds) {
+            const aviationUrl = "http://api.aviationstack.com/v1/flights?" 
+            + "access_key=" + process.env.AVIATIONSTACK_ACCESS_KEY!! 
+            + "&flight_number=" + flightId
+            + "&dep_iata=YYC&arr_iata=SEA"
+            + "&limit=1"
+
+            const aviationResponse = await axios.get(aviationUrl, {timeout: 30000})
+            const flightStatusString = aviationResponse.data.data[0].flight_status.toUpperCase()
+
+            const flightStatus: number = flightStatusToInt(flightStatusString);
+            await contract.updateFlightStatus(flightId, flightStatus, { gasPrice: 100000000, gasLimit: 1000000})
+            console.log("Flight updated - id: "+ flightId + " | status: " + flightStatusString);
+        }
+        res.status(200).json({ flightIds: scheduledFlightsIds.map(String) });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get rewards tokens: ' + error});
+    }
+});
 
 module.exports = router 
 export {};

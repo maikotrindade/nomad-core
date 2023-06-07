@@ -7,3 +7,6 @@
 
 ### Scripts
 `node` index.ts
+
+### Server
+`heroku logs --tail`
