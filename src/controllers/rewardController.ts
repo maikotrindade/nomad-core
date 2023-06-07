@@ -1,14 +1,14 @@
 // #!/usr/bin/env ts-node
-
 import { Signer } from "ethers";
 
 // /* eslint-disable import/first */
 require('dotenv').config();
 
 const axios = require('axios');
-const { Network, Alchemy, Wallet, Utils} = require("alchemy-sdk");
+const { Network, Alchemy, Wallet} = require("alchemy-sdk");
 const { ethers } = require("ethers");
 const { User } = require('./../models/User');
+const { FlightStatus } = require('./../models/FlightRewardStatus');
 const express = require('express');
 const router = express.Router();
 
@@ -20,8 +20,23 @@ const settings = {
 };
 
 const alchemy = new Alchemy(settings);
-//const signer = new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy);
 
+/**
+* GET Flights tokens
+*/
+router.get('/flights', async (req, res) => {
+    try {
+        const aviationUrl = "http://api.aviationstack.com/v1/flights?access_key=" + process.env.AVIATIONSTACK_ACCESS_KEY!! + "&dep_iata=YYC&arr_iata=SEA"
+        const aviationResponse = await axios.get(aviationUrl, {timeout: 30000})
+        res.status(201).json(aviationResponse.data.data);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch flights' + error});
+    }
+});
+
+/**
+* POST Add Flight
+*/
 router.post('/reward/flight', async (req, res) => {
     const { flightId, email } = req.body
     try {
@@ -38,6 +53,24 @@ router.post('/reward/flight', async (req, res) => {
     }
 });
 
+/**
+* POST Update Flight Status
+*/
+router.post('/reward/flightstatus', async (req, res) => {
+    const { flightId, flightStatus } = req.body
+    try {
+        const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
+        const updateFlightStatusMethod = await contract.updateFlightStatus(flightId, flightStatus, { gasPrice: 100000000, gasLimit: 1000000})
+        console.log(updateFlightStatusMethod)
+        res.status(201).json({ message: 'Flight status updated'});
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update flight status: ' + error});
+    }
+});
+
+/**
+* GET Reward points
+*/
 router.get('/reward/points', async (req, res) => {
     try {
         const email = req.query.email as string;
@@ -45,14 +78,17 @@ router.get('/reward/points', async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        const contract = await connectRewardBadge(new Wallet(user.privateKey, alchemy));
-        const points = await contract.getPoints()
+        const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
+        const points = await contract.getPoints(user.address)
         res.status(200).json({ points: points });
     } catch (error) {
         res.status(500).json({ error: 'Failed to get rewards points: ' + error});
     }
 });
 
+/**
+* GET Reward tokens
+*/
 router.get('/reward/tokens', async (req, res) => {
     try {
         const email = req.query.email as string;
@@ -60,9 +96,9 @@ router.get('/reward/tokens', async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        const contract = await connectRewardBadge(new Wallet(user.privateKey, alchemy));
-        const points = await contract.getTokensRewards()
-        res.status(200).json({ points: points });
+        const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
+        const erc20tokens = await contract.getTokensRewards(user.address)
+        res.status(200).json({ erc20tokens: erc20tokens });
     } catch (error) {
         res.status(500).json({ error: 'Failed to get rewards tokens: ' + error});
     }

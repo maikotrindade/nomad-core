@@ -10,7 +10,6 @@ const compression = require('compression');
 
 const userController = require('./controllers/userController.ts');
 const rewardController = require('./controllers/rewardController.ts');
-const flightController = require('./controllers/flightController.ts');
 
 const app = express();
 app.use(helmet());
@@ -20,7 +19,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-app.use(userController, rewardController, flightController)
+app.use(userController, rewardController)
 
 app.route('/')
 .get(function (req, res) {
