@@ -8,7 +8,6 @@ const axios = require('axios');
 const { Network, Alchemy, Wallet} = require("alchemy-sdk");
 const { ethers } = require("ethers");
 const { User } = require('./../models/User');
-const { FlightStatus } = require('./../models/FlightRewardStatus');
 const express = require('express');
 const router = express.Router();
 
@@ -35,7 +34,7 @@ router.get('/flights', async (req, res) => {
 });
 
 /**
-* POST Add Flight
+* POST Add flight
 */
 router.post('/reward/flight', async (req, res) => {
     const { flightId, email } = req.body
@@ -45,7 +44,7 @@ router.post('/reward/flight', async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         const contract = await connectRewardBadge(new Wallet(user.privateKey, alchemy));
-        const addFlightMethod = await contract.addFlight(flightId, user.address, { gasPrice: 100000000, gasLimit: 1000000})
+        const addFlightMethod = await contract.addFlight(flightId, { gasPrice: 100000000, gasLimit: 1000000})
         console.log(addFlightMethod)
         res.status(201).json({ message: 'Flight ticket added' });
     } catch (error) {
@@ -54,7 +53,7 @@ router.post('/reward/flight', async (req, res) => {
 });
 
 /**
-* POST Update Flight Status
+* POST Update flight status
 */
 router.post('/reward/flightstatus', async (req, res) => {
     const { flightId, flightStatus } = req.body
@@ -65,6 +64,20 @@ router.post('/reward/flightstatus', async (req, res) => {
         res.status(201).json({ message: 'Flight status updated'});
     } catch (error) {
         res.status(500).json({ error: 'Failed to update flight status: ' + error});
+    }
+});
+
+/**
+* POST Run reward process
+*/
+router.post('/reward', async (req, res) => {
+    try {
+        const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
+        const runRewardProcessMethod = await contract.runRewardProcess({ gasPrice: 100000000, gasLimit: 1000000})
+        console.log(runRewardProcessMethod)
+        res.status(201).json({ message: 'Reward processing started'});
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to run Reward process: ' + error});
     }
 });
 
