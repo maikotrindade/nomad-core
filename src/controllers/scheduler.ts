@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 
-import { updateFlightStatuses } from './src/controllers/rewardController';
+import { updateFlightStatuses } from './rewardController';
 
 async function dailyUpdateFlightStatuses() {
   try {
