@@ -12,6 +12,8 @@ function flightStatusToInt(status: string): number {
     return 4;
     case "DIVERTED":
     return 5;
+    case "REWARDED":
+    return 6;
     default:
     return -1;
   }

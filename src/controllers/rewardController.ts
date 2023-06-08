@@ -22,7 +22,7 @@ const alchemy = new Alchemy(settings);
 */
 router.get('/flights', async (req, res) => {
     try {
-        const aviationUrl = "http://api.aviationstack.com/v1/flights?access_key=" + process.env.AVIATIONSTACK_ACCESS_KEY!! + "&dep_iata=YYC&arr_iata=SEA&flight_status=scheduled"
+        const aviationUrl = "http://api.aviationstack.com/v1/flights?access_key=" + process.env.AVIATIONSTACK_ACCESS_KEY!! + "&dep_iata=YYC&arr_iata=SEA"
         const aviationResponse = await axios.get(aviationUrl, {timeout: 30000})
         res.status(201).json(aviationResponse.data.data);
     } catch (error) {
@@ -116,7 +116,7 @@ router.get('/reward/tokens', async (req, res) => {
 /**
 * GET Scheduled flights from smart contract
 */
-router.get('/admin/flights', async (req, res) => {
+router.post('/admin/flights', async (req, res) => {
     try {
         const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
         const scheduledFlightsIds = await contract.getScheduledFlights()
@@ -140,6 +140,25 @@ router.get('/admin/flights', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Failed to get rewards tokens: ' + error});
     }
+});
+
+/**
+* POST Add flight
+*/
+router.post('/admin/forcestatus', async (req, res) => {
+    // const { flightId, email } = req.body
+    // try {
+    //     const user = await User.findOne({ email: email }).exec();
+    //     if (!user) {
+    //         return res.status(404).json({ error: 'User not found' });
+    //     }
+    //     const contract = await connectRewardBadge(new Wallet(user.privateKey, alchemy));
+    //     const addFlightMethod = await contract.addFlight(flightId, { gasPrice: 100000000, gasLimit: 1000000})
+    //     console.log(addFlightMethod)
+    //     res.status(201).json({ message: 'Flight ticket added' });
+    // } catch (error) {
+    //     res.status(500).json({ error: 'Failed to add flight ticket: ' + error});
+    // }
 });
 
 module.exports = router 
