@@ -6,7 +6,7 @@
 - [Nomad app](https://github.com/maikotrindade/nomad-app) - Frontend
 
 ### Scripts
-`node` index.ts
+`node` server.ts
 
 ### Server
 `heroku logs --tail`

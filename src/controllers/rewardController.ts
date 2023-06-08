@@ -57,7 +57,7 @@ router.post('/reward/flightstatus', async (req, res) => {
     try {
         const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
         await contract.updateFlightStatus(flightId, flightStatus, { gasPrice: 100000000, gasLimit: 1000000})
-        res.status(201).json({ message: 'Flight status updated'});
+        res.status(200).json({ message: 'Flight status updated'});
     } catch (error) {
         res.status(500).json({ error: 'Failed to update flight status: ' + error});
     }
@@ -118,7 +118,15 @@ router.get('/reward/tokens', async (req, res) => {
 */
 router.post('/admin/flights', async (req, res) => {
     try {
-        const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
+        await updateFlightStatuses()
+        res.status(200).json({ message: "Flights statuses updated." });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update flight statuses based on API: ' + error});
+    }
+});
+
+async function updateFlightStatuses() {
+    const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
         const scheduledFlightsIds = await contract.getScheduledFlights()
         console.log(scheduledFlightsIds)
         
@@ -136,11 +144,7 @@ router.post('/admin/flights', async (req, res) => {
             await contract.updateFlightStatus(flightId, flightStatus, { gasPrice: 100000000, gasLimit: 1000000})
             console.log("Flight updated - id: "+ flightId + " | status: " + flightStatusString);
         }
-        res.status(200).json({ flightIds: scheduledFlightsIds.map(String) });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update flight statuses based on API: ' + error});
-    }
-});
+}
 
 /**
 * POST Force Update all SCHEDULED flights to ACTIVE - Admin/test function
@@ -162,4 +166,4 @@ router.post('/admin/forcestatus', async (req, res) => {
 });
 
 module.exports = router 
-export {};
+export { updateFlightStatuses };
