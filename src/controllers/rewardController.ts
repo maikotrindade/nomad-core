@@ -114,7 +114,7 @@ router.get('/reward/tokens', async (req, res) => {
 });
 
 /**
-* GET Scheduled flights from smart contract
+* Update flight statuses based on API
 */
 router.post('/admin/flights', async (req, res) => {
     try {
@@ -138,27 +138,27 @@ router.post('/admin/flights', async (req, res) => {
         }
         res.status(200).json({ flightIds: scheduledFlightsIds.map(String) });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to get rewards tokens: ' + error});
+        res.status(500).json({ error: 'Failed to update flight statuses based on API: ' + error});
     }
 });
 
 /**
-* POST Add flight
+* POST Force Update all SCHEDULED flights to ACTIVE - Admin/test function
 */
 router.post('/admin/forcestatus', async (req, res) => {
-    // const { flightId, email } = req.body
-    // try {
-    //     const user = await User.findOne({ email: email }).exec();
-    //     if (!user) {
-    //         return res.status(404).json({ error: 'User not found' });
-    //     }
-    //     const contract = await connectRewardBadge(new Wallet(user.privateKey, alchemy));
-    //     const addFlightMethod = await contract.addFlight(flightId, { gasPrice: 100000000, gasLimit: 1000000})
-    //     console.log(addFlightMethod)
-    //     res.status(201).json({ message: 'Flight ticket added' });
-    // } catch (error) {
-    //     res.status(500).json({ error: 'Failed to add flight ticket: ' + error});
-    // }
+    try {
+        const contract = await connectRewardBadge(new Wallet(ADMIN_ACCOUNT_PRIVATE_KEY, alchemy));
+        const scheduledFlightsIds = await contract.getScheduledFlights()
+        console.log(scheduledFlightsIds)
+        for (const flightId of scheduledFlightsIds) {
+            const activeFlightStatus = 1
+            await contract.updateFlightStatus(flightId, activeFlightStatus, { gasPrice: 100000000, gasLimit: 1000000})
+            console.log("Flight updated - id: "+ flightId + " | status: " + activeFlightStatus);
+        }
+        res.status(200).json({ flightIds: scheduledFlightsIds.map(String) });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to force update flight statuses: ' + error});
+    }
 });
 
 module.exports = router 
